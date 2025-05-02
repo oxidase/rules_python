@@ -93,6 +93,15 @@ def _python_repository_impl(rctx):
         rctx.delete("python/licenses")
         rctx.delete("python/PYTHON.json")
 
+    # Workarounds for a case-insensitive file system mounted as a case-sensitive one
+    # 1. Remove share/terminfo files to avoid clash of upper and lower case directories
+    rctx.execute(["/bin/rm", "-rf", "share/terminfo"])
+
+    # 2. Add lower-cased build.bazel files as siblings to build directories or files
+    result = rctx.execute(["/usr/bin/find", "lib", "-type", "d", "-path", "*/python*/site-packages/pip/_internal/operations"])
+    for dir in result.stdout.split("\n"):
+        rctx.execute(["/usr/bin/touch", "{}/build.bazel".format(dir)])
+
     patches = rctx.attr.patches
     if patches:
         for patch in patches:
